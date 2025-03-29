@@ -11,6 +11,8 @@ struct ChatView: View {
     
     @State private var textFieldText: String = ""
     
+    let vm: ChatViewModel = ChatViewModel()
+    
     var body: some View {
         VStack(spacing:0){
             // メッセージエリア
@@ -22,7 +24,12 @@ struct ChatView: View {
             // 入力エリア
             inputArea
         }
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 }
 
 #Preview {
@@ -33,14 +40,14 @@ extension ChatView {
     private var messageArea: some View {
         ScrollView{
             VStack(spacing: 0){
-                ForEach(0..<15){ _ in
-                    MessageRow()
+                ForEach(vm.messages){ message in
+                    MessageRow(message: message)
                 }
             }
             .padding(.horizontal)
             .padding(.top, 72)
         }
-        .background(.cyan)
+        .background(Color("Background"))
     }
     
     private var navigationArea: some View {
@@ -58,7 +65,7 @@ extension ChatView {
             .font(.title2)
         }
             .padding()
-            .background(.cyan.opacity(0.9))
+            .background(Color("Background").opacity(0.9))
     }
     
     private var inputArea: some View {
@@ -80,11 +87,15 @@ extension ChatView {
                         .foregroundColor(.gray)
                     , alignment: .trailing
                 )
+                .onSubmit {
+                    
+                }
             Image(systemName: "mic")
                 .font(.title2)
         }
-        .padding()
-        .background(.white)
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color(uiColor: .systemBackground))
     }
     
 }
