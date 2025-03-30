@@ -8,20 +8,24 @@
 import SwiftUI
 
 struct ChatView: View {
-    
+
+    let chat: Chat
+
     @State private var textFieldText: String = ""
     @FocusState private var textFieldFocused: Bool
-    
-    @ObservedObject var vm: ChatViewModel = ChatViewModel()
-    
+    @Environment(\.dismiss) private var dismiss
+
+    // @ObservedObject var vm: ChatViewModel = ChatViewModel()
+    @EnvironmentObject var vm: ChatViewModel
+
     var body: some View {
-        VStack(spacing:0){
+        VStack(spacing: 0) {
             // メッセージエリア
             messageArea
-            
-            // ナビゲーションエリア
-            .overlay(navigationArea,alignment: .top)
-            
+
+                // ナビゲーションエリア
+                .overlay(navigationArea, alignment: .top)
+
             // 入力エリア
             inputArea
         }
@@ -29,20 +33,20 @@ struct ChatView: View {
     }
 
     #if DEBUG
-    @ObserveInjection var forceRedraw
+        @ObserveInjection var forceRedraw
     #endif
 }
 
-#Preview {
-    ChatView()
-}
+//#Preview {
+//    ChatView()
+//}
 
 extension ChatView {
     private var messageArea: some View {
         ScrollViewReader { proxy in
-            ScrollView{
-                VStack(spacing: 0){
-                    ForEach(vm.messages){ message in
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(chat.messages) { message in
                         MessageRow(message: message)
                     }
                 }
@@ -59,33 +63,38 @@ extension ChatView {
                 scrollToLast(proxy: proxy)
             }
             // 新規メッセージが追加された時
-            .task(id: vm.messages.count){
+            .task(id: chat.messages.count) {
                 scrollToLast(proxy: proxy)
             }
         }
     }
-    
+
     private var navigationArea: some View {
-        HStack{
-            Image(systemName: "chevron.backward")
-                .font(.title2)
+        HStack {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.backward")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+            }
             Text("Title")
                 .font(.title2.bold())
             Spacer()
-            HStack(spacing: 16){
+            HStack(spacing: 16) {
                 Image(systemName: "text.magnifyingglass")
                 Image(systemName: "phone")
                 Image(systemName: "line.3.horizontal")
             }
             .font(.title2)
         }
-            .padding()
-            .background(Color("Background").opacity(0.9))
+        .padding()
+        .background(Color("Background").opacity(0.9))
     }
-    
+
     private var inputArea: some View {
-        HStack{
-            HStack{
+        HStack {
+            HStack {
                 Image(systemName: "plus")
                 Image(systemName: "camera")
                 Image(systemName: "photo")
@@ -100,8 +109,7 @@ extension ChatView {
                     Image(systemName: "face.smiling")
                         .font(.title2)
                         .padding(.trailing, 5)
-                        .foregroundColor(.gray)
-                    , alignment: .trailing
+                        .foregroundColor(.gray), alignment: .trailing
                 )
                 .focused($textFieldFocused)
             if !textFieldText.isEmpty {
@@ -121,20 +129,20 @@ extension ChatView {
         .padding(.vertical, 8)
         .background(Color(uiColor: .systemBackground))
     }
-    
+
     // メッセージ送信
-    private func sendMessage(){
+    private func sendMessage() {
         if !textFieldText.isEmpty {
-            vm.addMessage(text: textFieldText)
+            vm.addMessage(chatId: chat.id, text: textFieldText)
             textFieldText = ""
         }
     }
-    
+
     // 一番下までスクロールする
     private func scrollToLast(proxy: ScrollViewProxy) {
-        if let lastMessage = vm.messages.last {
+        if let lastMessage = chat.messages.last {
             proxy.scrollTo(lastMessage.id, anchor: .bottom)
         }
     }
-    
+
 }
