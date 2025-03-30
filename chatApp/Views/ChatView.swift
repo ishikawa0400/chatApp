@@ -10,8 +10,9 @@ import SwiftUI
 struct ChatView: View {
     
     @State private var textFieldText: String = ""
+    @FocusState private var textFieldFocused: Bool
     
-    let vm: ChatViewModel = ChatViewModel()
+    @ObservedObject var vm: ChatViewModel = ChatViewModel()
     
     var body: some View {
         VStack(spacing:0){
@@ -38,16 +39,30 @@ struct ChatView: View {
 
 extension ChatView {
     private var messageArea: some View {
-        ScrollView{
-            VStack(spacing: 0){
-                ForEach(vm.messages){ message in
-                    MessageRow(message: message)
+        ScrollViewReader { proxy in
+            ScrollView{
+                VStack(spacing: 0){
+                    ForEach(vm.messages){ message in
+                        MessageRow(message: message)
+                    }
                 }
+                .padding(.horizontal)
+                .padding(.top, 72)
             }
-            .padding(.horizontal)
-            .padding(.top, 72)
+            .background(Color("Background"))
+            // メッセージエリアをタップした時にキーボードを閉じる
+            .onTapGesture {
+                textFieldFocused = false
+            }
+            // 初回表示時
+            .onAppear {
+                scrollToLast(proxy: proxy)
+            }
+            // 新規メッセージが追加された時
+            .task(id: vm.messages.count){
+                scrollToLast(proxy: proxy)
+            }
         }
-        .background(Color("Background"))
     }
     
     private var navigationArea: some View {
@@ -76,26 +91,50 @@ extension ChatView {
                 Image(systemName: "photo")
             }
             .font(.title2)
-            TextField("Aa", text: $textFieldText)
-                .padding()
+            TextField("Aa", text: $textFieldText, axis: .vertical)
+                .padding(10)
+                .padding(.trailing, 20)
                 .background(Color(uiColor: .secondarySystemBackground))
-                .clipShape(Capsule())
+                .cornerRadius(20)
                 .overlay(
                     Image(systemName: "face.smiling")
                         .font(.title2)
-                        .padding(.trailing)
+                        .padding(.trailing, 5)
                         .foregroundColor(.gray)
                     , alignment: .trailing
                 )
-                .onSubmit {
-                    
-                }
-            Image(systemName: "mic")
-                .font(.title2)
+                .focused($textFieldFocused)
+            if !textFieldText.isEmpty {
+                Image(systemName: "paperplane.fill")
+                    .font(.title2)
+                    .foregroundColor(.blue)
+                    .onTapGesture {
+                        textFieldFocused = true
+                        sendMessage()
+                    }
+            } else {
+                Image(systemName: "paperplane")
+                    .font(.title2)
+            }
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(Color(uiColor: .systemBackground))
+    }
+    
+    // メッセージ送信
+    private func sendMessage(){
+        if !textFieldText.isEmpty {
+            vm.addMessage(text: textFieldText)
+            textFieldText = ""
+        }
+    }
+    
+    // 一番下までスクロールする
+    private func scrollToLast(proxy: ScrollViewProxy) {
+        if let lastMessage = vm.messages.last {
+            proxy.scrollTo(lastMessage.id, anchor: .bottom)
+        }
     }
     
 }
